@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="utf-8">
+        
+        <style>
+            
+            
+            
+        </style>
+        
+    </head>
+
+    <body> 
+        
+        
+<?php
+    
+    //$FileName = "m5-password.txt";
+    
+    $dsn = 'データベース名';
+    $user = 'ユーザー名';
+    $password = 'パスワード';
+    $pdo = new PDO($dsn, $user, $password, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING));
+    $sql = "CREATE TABLE IF NOT EXISTS board"
+    ." ("
+    . "id INT AUTO_INCREMENT PRIMARY KEY,"
+    . "name char(32),"
+    . "comment TEXT,"
+    . "password TEXT"
+    //. "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+    .");";
+    $stmt = $pdo->query($sql);
+    
+    
+        /*
+        //現在どのようなデータベースがあるかを確認。
+        $sql ='SHOW TABLES';
+        $result = $pdo -> query($sql);
+        foreach ($result as $row){
+            echo $row[0];
+            echo '<br>';
+        }
+        echo "<hr>";*/
+    
+    if(!empty($_POST["postsubmit"])){
+    
+    if(empty($_POST["name"])){
+        echo "名前が入力されていません。";
+    }else{
+        if(empty($_POST["comment"])){
+            echo "コメントが入力されていません。";
+        }else{
+        
+        if(empty($_POST["password"])){
+            echo "パスワードを入力してください。";
+        }else{
+            $sql = 'SELECT id, name, password FROM board';
+            $stmt = $pdo->query($sql);
+            $results = $stmt->fetchAll();
+            foreach($results as $line){
+                if($line[1] == $_POST["name"]){
+                        $currentpassword = $line[1].$line[2];
+                        break;
+                    }else{
+                        $currentpassword = $_POST["name"].$_POST["password"];
+                    }
+                }
+                
+                $triedpassword = $_POST["name"].$_POST["password"];
+            
+            if($triedpassword == $currentpassword){
+                    
+                    if(!empty($_POST["enum"])){
+                        $id = $_POST["enum"]; //変更する投稿番号
+                        $name = $_POST["name"];
+                        $comment = $_POST["comment"]; //変更したい名前、変更したいコメントは自分で決めること
+                        $sql = 'UPDATE board SET name=:name,comment=:comment WHERE id=:id';
+                        $stmt = $pdo->prepare($sql);
+                        $stmt->bindParam(':name', $name, PDO::PARAM_STR);
+                        $stmt->bindParam(':comment', $comment, PDO::PARAM_STR);
+                        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+                        $stmt->execute();
+                
+                    }else{
+                        $sql = $pdo -> prepare("INSERT INTO board (name, comment, password) VALUES (:name, :comment, :password)");
+                        $sql -> bindParam(':name', $name, PDO::PARAM_STR);
+                        $sql -> bindParam(':comment', $comment, PDO::PARAM_STR);
+                        $sql -> bindParam(':password', $password, PDO::PARAM_STR);
+                        $name = $_POST["name"];
+                        $comment = $_POST["comment"]; //好きな名前、好きな言葉は自分で決めること
+                        $password = $_POST["password"];
+                        $sql -> execute();
+                        
+                    }
+                    
+                }else{
+                    echo "パスワードが違います。";
+                }
+            /*}else{
+                $sql = $pdo -> prepare("INSERT INTO board (name, comment, password) VALUES (:name, :comment, :password)");
+                $sql -> bindParam(':name', $name, PDO::PARAM_STR);
+                $sql -> bindParam(':comment', $comment, PDO::PARAM_STR);
+                $sql -> bindParam(':password', $password, PDO::PARAM_STR);
+                $name = $_POST["name"];
+                $comment = $_POST["comment"]; //好きな名前、好きな言葉は自分で決めること
+                $password = $_POST["password"];
+                $sql -> execute();
+                
+            }*/
+        }    
+        }
+    }    
+    }
+    
+    if(!empty($_POST["deletesubmit"])){
+    
+    if(empty($_POST["delete"])){
+        echo "(削除)行番号が入力されていません。";
+    }else{
+        
+        if(empty($_POST["password"])){
+            echo "パスワードを入力してください。";
+        }else{
+            $id = $_POST["delete"] ; // idがこの値のデータだけを抽出したい、とする
+            $sql = 'SELECT * FROM board WHERE id=:id ';
+            $stmt = $pdo->prepare($sql);                  // ←差し替えるパラメータを含めて記述したSQLを準備し、
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT); // ←その差し替えるパラメータの値を指定してから、
+            $stmt->execute();                             // ←SQLを実行する。
+            $results = $stmt->fetchAll();
+            if(!empty($results)){
+                $theline = $results[0];
+                
+                if($theline[3] == $_POST["password"]){
+                        $id = $_POST["delete"];
+                        $sql = 'delete from board where id=:id';
+                        $stmt = $pdo->prepare($sql);
+                        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+                        $stmt->execute();
+                    
+                }else{
+                    echo "パスワードが違います。";
+                }
+            
+            }else{
+                    echo "指定した投稿は存在しません。";
+                }
+        
+        }
+    }
+    }
+    
+    if(!empty($_POST["editsubmit"])){
+      
+     if(empty($_POST["edit"])){
+         echo "(編集)行番号が入力されていません";
+     }else{
+        
+        if(empty($_POST["password"])){
+            echo "パスワードを入力してください。";
+        }else{
+            $id = $_POST["edit"] ; // idがこの値のデータだけを抽出したい、とする
+            $sql = 'SELECT * FROM board WHERE id=:id ';
+            $stmt = $pdo->prepare($sql);                  // ←差し替えるパラメータを含めて記述したSQLを準備し、
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT); // ←その差し替えるパラメータの値を指定してから、
+            $stmt->execute();                             // ←SQLを実行する。
+            $results = $stmt->fetchAll();
+            if(!empty($results)){
+                $theline = $results[0];
+                
+                if($theline[3] == $_POST["password"]){
+                    
+                    $enumber = $theline[0];
+                    $ename = $theline[1];
+                    $ecomment = $theline[2];
+                            
+                    
+                }else{
+                    echo "パスワードが違います。";
+                }
+                
+            }else{
+                    echo "指定した投稿は存在しません。";
+                }        
+                
+        }
+    }
+    }  
+    
+    
+    ?>
+
+    
+    <form method="POST" action="">
+    【投稿】<br>
+        <input type="text" name="name" placeholder="名前" value="<?php if(!empty($ename)){echo $ename;} ?>"><br>
+        <input type="text" name="comment" placeholder="コメント "value="<?php if(!empty($ecomment)){echo $ecomment;} ?>"><br>
+        <input type="text" name="password" placeholder="パスワード">
+        <input type="hidden" name="enum" value="<?php if(!empty($enumber)){echo $enumber;} ?>">
+        <input type="submit" name="postsubmit" value="投稿"><br>
+    </form>
+    
+    <form method="POST" action=""><br>
+    【指定行の削除】<br>
+        <input type="text" name="delete" placeholder="行番号"><br>
+        <input type="text" name="password" placeholder="パスワード">
+        <input type="submit" name="deletesubmit" value="削除"><br>
+    </form>
+    
+    <form method="POST" action=""><br>
+    【指定行の編集】<br>
+        <input type="text" name="edit" placeholder="行番号"><br>
+        <input type="text" name="password" placeholder="パスワード">
+        <input type="submit" name="editsubmit" value="編集"><br>
+    </form><br>
+    
+    【　投稿一覧　】<br>
+    
+    <hr>
+        
+    <?php
+    
+    if(!empty($_POST["postsubmit"]) || !empty($_POST["deletesubmit"]) || !empty($_POST["editsubmit"])){
+        $sql = 'SELECT * FROM board';
+        $stmt = $pdo->query($sql);
+        $results = $stmt->fetchAll();
+        foreach ($results as $row){
+            //$rowの中にはテーブルのカラム名が入る
+            echo $row['id'].',';
+            echo $row['name'].',';
+            echo $row['comment'].'<br>';
+        echo "<hr>";
+        }
+    }
+        /*if(!empty($file)){
+            $file = file($FileName,FILE_IGNORE_NEW_LINES);
+            foreach($file as $line){
+                $fullcomment = explode("<>",$line);
+                $viewcomment = array_slice($fullcomment,0,4);
+                echo $viewcomment[0].".".$viewcomment[1]." ".
+                    "「".$viewcomment[2]."」".$viewcomment[3];
+                echo "<br>";
+            }
+        }*/
+
+    ?>
+        
+    </body>
+    </html>
